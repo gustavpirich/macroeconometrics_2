@@ -19,6 +19,7 @@ urlcolor: Mahogany
 
 ```{r, setup, include = FALSE}
 knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 80), tidy = TRUE)
+set.seed(123)
 ```
 
 \vspace{2em}
@@ -28,10 +29,8 @@ knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 80), tidy = TRUE)
 
 # Exercise 1
 
-## Convergence of sample mean to population mean from N(5, 9)
+## Simulation from draws of normal distirbution
 ```{r, out.width="70%", fig.align="center"}
-set.seed(123)
-
 random <- rnorm(100, mean = 5, sd = 9)
 
 #Mean with varying 1, ..., n draws
@@ -43,10 +42,13 @@ plot(1:100, mean_est, type = "l", xlab = "n", ylab = "Estimate", col = "blue", l
 abline(h = 5, col = "red")
 legend("bottomright", legend = "Actual mean", col = "red", lty = 1)
 ```
-
+\
 As n increases, the estimate converges to the true mean of the simulated distribution. The estimated mean converges to the true sample mean. This is exactly what we would expect based on the law of large numbers.
 
+## Simulation from draws of Cauchy distirbution
 ```{r, out.width="70%", fig.align="center"}
+set.seed(123)
+
 # Simulate 10000 draws from a standard Cauchy distribution
 cauchy <- (rnorm(n = 10000, mean = 0, sd = 1) / rnorm(n = 10000, mean = 0, sd = 1))
 mean_est <- cumsum(cauchy) / (1:10000)
@@ -57,7 +59,7 @@ plot(1:10000, mean_est, type = "l", xlab = "n", ylab = "Estimate", col = "blue",
 abline(h = 0, col = "red")
 legend("bottomright", legend = "Mean of the two standard normal distributions", col = "red", lty = 1)
 ```
-
+\
 The quotient of two standard normal distribution follows a Cauchy distribution. The moments of a Cauchy distribution do not exist (That is also the reason, why its called a pathological distirbution). The law of large numbers does not apply. That is exactly why we do not observe any converegnce in the estimates of the mean. 
 
 \newpage
@@ -88,10 +90,12 @@ A source of prior information could be the baseline prevelance of the disease in
 
 # Exercise 3
 
+## 3.1 Simulating data
 ```{r}
+set.seed(123) 
 # The function returns a list with y and X
 simulate_linear_regression <- function(n, k, alpha, beta, sigma) {
-  # Draw k independent variables from a standard normal distribution
+  # Draw k independent variables from a log normal distribution
   X <- matrix(rlnorm(n * k), nrow = n, ncol = k)
   # Draw the error term from a normal distribution with mean zero and standard deviation sigma
   e <- rnorm(n, mean = 0, sd = sigma)
@@ -100,21 +104,27 @@ simulate_linear_regression <- function(n, k, alpha, beta, sigma) {
   # Return a list with y and X
   return(list(y = y, X = X))
 }
+```
+\
+We wrote a function that simulates data from a linear regression. For the k-independent variables, we have chosen a lognormal distribution.
 
-# Simulate data with k = 1 and sigma = 1
-set.seed(123) # Set a seed for reproducibility
-data <- simulate_linear_regression(n = 100, k = 1, alpha = 2, beta = 3, sigma = 1)
+```{r}
+set.seed(123) 
+data <- simulate_linear_regression(n = 100, k = 1, alpha = 2, beta = 2, sigma = 1)
 y <- data$y # Extract y from the list
 X <- data$X # Extract X from the list
 
-# Plot x and y in a scatterplot and add a LS regression line
+# Plot x and y in a scatterplot and add a least-squares regression line
 plot(X, y, main = "Simulated data", xlab = "x", ylab = "y")
 abline(lm(y ~ X), col = "red") # Fit a linear model and add the line
-
+```
+\
+Because we generated the X values with lognormal distribution, we can see a clustering of values for lower values of X. 
+```{r}
 # Repeat this 1000 times and store beta_LS every time
 beta_LS <- numeric(1000) # Initialize a vector to store beta_LS
 for (i in 1:1000) {
-  data <- simulate_linear_regression(n = 100, k = 1, alpha = 2, beta = 3, sigma = 1)
+  data <- simulate_linear_regression(n = 100, k = 1, alpha = 2, beta = 2, sigma = 1)
   y <- data$y
   X <- data$X
   fit <- lm(y ~ X) # Fit a linear model
@@ -122,9 +132,15 @@ for (i in 1:1000) {
 }
 
 # Create a histogram of the LS estimates
-hist(beta_LS, main = "Histogram of beta_LS", xlab = "beta_LS", breaks = 50)
+hist(beta_LS, main = "Histogram of Beta Estimates ", xlab = "beta_LS", breaks = 100)
 ```
+\
+We create a histogram of the LS estimators. We see that the histogram is centered at 2, the true value of beta with which the data was generated. The distribution seems to follow a normal distribution. The beta estimates are also fairly precise. Even the "outer" estimates at around 1.8-2.2 are not too too far off from the true coefficient.
 
+## 3.2 Latent values 
+Given that we know that $\sigma^{2} = 1$, the only latent values are the $beta$ coefficients. 
+
+## 3.3 Latent values 
 
 \newpage
 
