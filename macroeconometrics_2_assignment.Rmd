@@ -29,7 +29,7 @@ set.seed(123)
 
 # Exercise 1
 
-## Simulation from draws of normal distirbution
+## Simulation from draws of Normal Distribution
 ```{r, out.width="70%", fig.align="center"}
 random <- rnorm(100, mean = 5, sd = 9)
 
@@ -60,28 +60,24 @@ abline(h = 0, col = "red")
 legend("bottomright", legend = "Mean of the two standard normal distributions", col = "red", lty = 1)
 ```
 \
-The quotient of two standard normal distribution follows a Cauchy distribution. The moments of a Cauchy distribution do not exist (That is also the reason, why its called a pathological distirbution). The law of large numbers does not apply. That is exactly why we do not observe any converegnce in the estimates of the mean. 
+The quotient of two standard normal distribution follows a Cauchy distribution. The moments of a Cauchy distribution do not exist (it's a pathological distribution). The law of large numbers does not apply. That is exactly why we do not observe any convergence in the estimates of the mean. 
 
 \newpage
 
 # Exercise 2 
 
+## 2.1 Deriviing the Posterior distribution
 The class of conjugate priors is the Beta distribution. We now derive the posterior distribution
 
+The likelihood follows a binomial distribution. As in the slides, we settled on a Beta distribution to specify the prior. Since the binomial distribution is conjugate to the beta distribution, the posterior follows a beta distribution. ADDING DERIVATIONS
 
-The likelihood follows a binomial distribution. As in the slides, we settled on a Beta distribution to specify the prior. Since the binomial distribution is conjugate to the beta distribution, the posterior follows a beta distribution. 
+## 2.2 Several Point Estimates
 
-2. Now that we have observations for 20 people over 30 days, we in total have 600 observations. $S_{n}$ is equal to 10. Let us assume a uniform prior, i.e. Beta(1,1). Our point estimator yields the following Beta distribution. The mean of this distribution a/a+b.
+## The assumption of identical and independent errors 
+A source of prior information could be the baseline prevelance of the disease in Austria in the last week. More specific data could also be used like, how many people in the office already had COVID. Further potential useful informaiton is how many times they were infected and how high their vaccination rates are. 
 
-
-
-
-
-
-
-A source of prior information could be the baseline prevelance of the disease in Austria.  
-
-4. The assumption of independent and identically distributed errors seems implausible. If one individual has the disease on a given day, the probability that the other tests are positive is clearly higher. So we would clearly expect the outbreak to be clustered in a time dimension. 
+## 2. 4 The assumption of identical and independent errors 
+The assumption of independent and identically distributed data seems implausible. If one individual has the disease on a given day, the probability that the other tests are positive is higher. So we would expect the outbreak to be correlated in time dimension. The knowledge of the correlation could be used to impose structure on the dynamics of the infection. To improve the conceptual understanding of the dynamics of the infection rates, one could impose a dependence structure. First one could model the spread of the disease as a timer series, where one could include an autoregressive term to account for correlation in time. Second one could model the disease prevelance as a network. One could ac count for the fact that people spend differentially more time together than others, increasing the likelihoof of transmission. Thinking about disease prevalnce in terms of networks seems to use the conceptually most realistic approximation of the disease prevalence 
 
 
 
@@ -106,7 +102,7 @@ simulate_linear_regression <- function(n, k, alpha, beta, sigma) {
 }
 ```
 \
-We wrote a function that simulates data from a linear regression. For the k-independent variables, we have chosen a lognormal distribution.
+We wrote a function that simulates data from a linear regression. For the k-independent variables, we have chosen a lognormal distribution. (rlnorm)
 
 ```{r}
 set.seed(123) 
@@ -125,7 +121,7 @@ set.seed(123)
 # Repeat this 1000 times and store beta_LS every time
 beta_LS <- numeric(1000) # Initialize a vector to store beta_LS
 for (i in 1:1000) {
-  data <- simulate_linear_regression(n = 100, k = 1, alpha = 2, beta = 2, sigma = 1)
+  data <- simulate_linear_regression(n = 100, k = 1, alpha = 1, beta = 2, sigma = 1)
   y <- data$y
   X <- data$X
   fit <- lm(y ~ X) # Fit a linear model
@@ -170,14 +166,25 @@ legend("topright", legend=c("N(0.2,0.25)", "N(0.5,0.5)", "N(1.75,0.6)"),
 
 
 ## 3.4 Simulating posterior density 
-
-#We specify a prior. We decide on N(1.5, 2). We now compute and plot the posterior density specified as: 
+\
+We specify a prior. We decide on N(1.5, 2). We now compute and plot the posterior density specified as: 
 ```{r}
-set.seed(123)
+set.seed(50)
 
-#specifying the prior
+#specifying the prior N(3, 4)
 sigma_prior <- 2
-mu_prior <- 0.5
+mu_prior <- 3
+
+simulate_linear_regression <- function(n, k, alpha, beta, sigma) {
+  # Draw k independent variables from a log normal distribution
+  X <- matrix(rlnorm(n * k), nrow = n, ncol = k)
+  # Draw the error term from a normal distribution with mean zero and standard deviation sigma
+  e <- rnorm(n, mean = 0, sd = sigma)
+  # Compute y as alpha + X*beta + e
+  y <- alpha + X %*% beta + e
+  # Return a list with y and X
+  return(list(y = y, X = X))
+}
 
 simul_50 <- simulate_linear_regression(n = 50, k = 1, alpha  = 1 , beta = 2, sigma = 1)
 simul_100 <- simulate_linear_regression(n = 100, k = 1, alpha  = 1, beta = 2, sigma = 1)
@@ -193,27 +200,21 @@ X_200 <- simul_200$X
 Y_200 <- simul_200$y
 
 sigma_50 <- as.numeric((sigma_prior^(-1) + ((t(X_50)%*%X_50)))^(-1))
-mu_50 <- as.numeric(sigma_50*(2^(-1)*mu_prior + (t(X_50)%*%Y_50)))
+mu_50 <- as.numeric(sigma_50*(sigma_prior^(-1)*mu_prior + (t(X_50)%*%Y_50)))
 
 sigma_100 <- as.numeric((sigma_prior^(-1) + ((t(X_100)%*%X_100)))^(-1))
-mu_100 <- as.numeric(sigma_100*(2^(-1)*mu_prior + (t(X_100)%*%Y_100)))
+mu_100 <- as.numeric(sigma_100*(sigma_prior^(-1)*mu_prior + (t(X_100)%*%Y_100)))
 
 sigma_200 <- as.numeric((sigma_prior^(-1) + ((t(X_200)%*%X_200)))^(-1))
-mu_200 <- as.numeric(sigma_200*(2^(-1)*mu_prior + (t(X_200)%*%Y_200)))
+mu_200 <- as.numeric(sigma_200*(sigma_prior^(-1)*mu_prior + (t(X_200)%*%Y_200)))
 
-x_50 <- seq(mu_50-sigma_50*4, mu_50+sigma_50*4, length.out = 1000)
+x <- seq(2, 2.4, by = 0.0001)
 
-x_100 <- seq(mu_100-sigma_100*4, mu_100+sigma_100*4, length.out = 1000)
-
-x_200 <- seq(mu_200-sigma_200*4, mu_100+sigma_100*4, length.out = 1000)
-
-y_50 <- dnorm(x_50, mean = mu_50, sd = sigma_50^2)
-y_100 <- dnorm(x_100, mean = mu_100, sd = sigma_100^2)
-y_200 <- dnorm(x_200, mean = mu_200, sd = sigma_200^2)
-
-plot(x_50, y_50, type = "l", lwd = 2, col = "blue", xlab = "x", ylab = "Density", main = "Posterior for n = 50")
-plot(x_100, y_100, type = "l", lwd = 2, col = "blue", xlab = "x", ylab = "Density", main = "Posterior for n = 100")
-plot(x_200, y_200, type = "l", lwd = 2, col = "blue", xlab = "x", ylab = "Density", main = "Posterior for n = 200")
+plot(x, dnorm(x, mu_50, sqrt(sigma_50)), type="l", col="red", lwd=2, xlab="x", ylim = c(0,20), ylab="Density", main = "Posterior Distributions for Prior N(4, 1)")
+lines(x, dnorm(x, mu_100, sqrt(sigma_100)), type="l", col="blue", lwd=2)
+lines(x, dnorm(x, mu_200, sqrt(sigma_200)), type="l", col="green", lwd=2)
+legend("topright", legend=c("n = 50", "n = 100", "n = 200"),
+       col=c("red", "blue", "green"), lty=1)
 
 ```
 
@@ -221,3 +222,29 @@ plot(x_200, y_200, type = "l", lwd = 2, col = "blue", xlab = "x", ylab = "Densit
 
 # Exercise 4 
 
+We use the fact that $\sum_{i=1}^n (y_i - \beta)^2 = n(\beta - \Bar{y}) + (\sum_{i=1}^n (y_i-\Bar{y})^2)$ (Variance Decomposition)
+
+\begin{align*}
+    p(\mu|y) &\propto p(y|1,\mu)p(\mu) \\
+    &\propto \exp(-\frac{n(\mu-\Bar{y})^2}{2} - \frac{\sum_{i=1}^n (y_i-\Bar{y})^2}{2})\exp(-\frac{(\mu-\mu_0)^2}{2\sigma_0^2}) \\
+    & \propto \exp(-\frac{n(\mu^2 - 2\mu\Bar{y} + \Bar{y}^2)}{2} - \frac{\mu^2 - 2\mu\mu_0 +\mu_0^2}{2\sigma_0^2})\\
+    &= \exp(-\frac{\sigma_0^2(\mu^2 - 2\mu\Bar{y} + \Bar{y}^2)}{2\sigma_0^2/n} - \frac{(1/n)(\mu^2 - 2\mu\mu_0 +\mu_0^2)}{(2\sigma_0^2)/n})\\
+    &= \exp(-\frac{1}{2\sigma_0^2/n}(\sigma_0^2(\mu^2 - 2\mu\Bar{y} + \Bar{y}^2) + \frac{1}{n}(\mu^2 - 2\mu\mu_0 +\mu_0^2))) \\
+    &= \exp(-\frac{1}{2\sigma_0^2/n}(\mu^2(\sigma_0^2 + 1/n) - 2\mu(\Bar{y}\sigma_0^2 + \mu_0/n) + \Bar{y}^2\sigma_0^2 + \mu_0^2/n))) \\
+    &\propto \exp(-\frac{1}{2\sigma_0^2/n}(\mu^2(\sigma_0^2 + 1/n) - 2\mu(\Bar{y}\sigma_0^2 + \mu_0/n))) \\
+    &= \exp(-\frac{1}{2\sigma_0^2/n}(\mu^2(\sigma_0^2 + 1/n) - 2\mu(\Bar{y}\sigma_0^2 + \mu_0/n)\frac{(\sigma_0^2 + 1/n)}{(\sigma_0^2 + 1/n)})) \\
+    &= \exp(-\frac{(\sigma_0^2 + 1/n)}{2\sigma_0^2/n}(\mu^2 - 2\mu(\Bar{y}\sigma_0^2 + \mu_0/n)\frac{1}{(\sigma_0^2 + 1/n)})) \\
+    &\propto \exp(-\frac{(\sigma_0^2 + 1/n)}{2\sigma_0^2/n}(\mu^2 - 2\mu\frac{(\Bar{y}\sigma_0^2 + \mu_0/n)}{(\sigma_0^2 + 1/n)} + (\frac{(\Bar{y}\sigma_0^2 + \mu_0/n)}{(\sigma_0^2 + 1/n)})^2)) \\
+    &= \exp(-\frac{1}{2\sigma^\ast} (\mu - \mu^\ast)
+\end{align*}
+where $\mu^\ast = \frac{(\Bar{y}\sigma_0^2 + \mu_0/n)}{(\sigma_0^2 + 1/n)})^2)$ and $\sigma^\ast = (n+\frac{1}{\sigma_0^2})^{-1}$
+
+```{r}
+# Create two vectors of data
+data1 <- rnorm(1000, 12, 1)
+data2 <- rnorm(1000, 11, 1)
+
+# Plot two histograms on the same chart with transparency
+hist(data1, col=rgb(1,0,0,0.5), ylim = c(0,400), main="Histograms of Two Normally Distributed Priors N(12,1) and N(11,1)")
+hist(data2, col=rgb(0,0,1,0.5), add=TRUE)
+```
